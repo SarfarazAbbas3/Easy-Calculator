@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{color-scheme:light dark}body{margin:0}[hidden]{display:none!important}</style>
+<title>Easy Cal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: phone app shell. Sticky header, scrolling content, fixed bottom tab bar. Tools open as full screens from a launcher grid. */
+:root{
+  --bg:#F1F3F8; --surface:#FFFFFF; --surface2:#E8ECF5; --ink:#141C33; --muted:#59647F; --line:#DCE1EC;
+  --accent:#2F4FB3; --accent-ink:#FFFFFF; --accent-soft:#E1E8FA;
+  --hero:#1B2A5C; --hero-ink:#FFFFFF; --hero-mut:#B9C4EC;
+  --c-test:#2F4FB3; --c-fab:#B53A4C; --c-yarn:#1B7A69; --c-tool:#9A6410;
+  --warn:#B3541E;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1322; --surface:#162038; --surface2:#1F2B49; --ink:#E7EBF6; --muted:#98A4C2; --line:#2A3658;
+  --accent:#8AA2F2; --accent-ink:#0D1322; --accent-soft:#233059;
+  --hero:#26397A; --hero-ink:#FFFFFF; --hero-mut:#C2CCF2;
+  --c-test:#8FA7F5; --c-fab:#F08A9B; --c-yarn:#58C6B0; --c-tool:#E3B35A; --warn:#F0A06A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#162038; --surface2:#1F2B49; --ink:#E7EBF6; --muted:#98A4C2; --line:#2A3658;
+  --accent:#8AA2F2; --accent-ink:#0D1322; --accent-soft:#233059;
+  --hero:#26397A; --hero-ink:#FFFFFF; --hero-mut:#C2CCF2;
+  --c-test:#8FA7F5; --c-fab:#F08A9B; --c-yarn:#58C6B0; --c-tool:#E3B35A; --warn:#F0A06A; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 96px;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.shell{max-width:520px;margin:0 auto}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;gap:10px;padding:12px 0 10px}
+header.top h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:40px;height:40px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.ib svg{width:20px;height:20px}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--hero);color:#fff;display:grid;place-items:center;flex:none}
+.logo svg{width:20px;height:20px}
+main{display:grid;gap:14px;padding-bottom:8px}
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:0 14px;height:48px}
+.search svg{width:18px;height:18px;color:var(--muted);flex:none}
+.search input{flex:1;min-width:0;border:0;background:none;outline:0;font:inherit;color:var(--ink);font-size:16px}
+.gh{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:6px 2px -4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}
+.tile:active{transform:scale(.98)}
+.ti{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.ti svg{width:23px;height:23px}
+.tile b{display:block;font-weight:600;font-size:15px;line-height:1.25}
+.tile span.s{display:block;color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:2px}
+.cat-test{--c:var(--c-test)}.cat-fab{--c:var(--c-fab)}.cat-yarn{--c:var(--c-yarn)}.cat-tool{--c:var(--c-tool)}
+.empty{color:var(--muted);text-align:center;padding:36px 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:14px}
+.card h3{margin:0;font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.card p.n{margin:0;color:var(--muted);font-size:13px}
+.panel{display:grid;gap:14px}
+.seg{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:13px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto;min-height:38px;padding:0 12px;border-radius:10px;font-size:13.5px;font-weight:500;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(10,20,50,.18)}
+.fld{display:grid;gap:6px;min-width:0}
+.fl{font-size:13px;color:var(--muted);font-weight:500}
+.fw{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid transparent;border-radius:13px;height:52px;padding:0 14px}
+.fw:focus-within{border-color:var(--accent);background:var(--surface)}
+.fw input{flex:1;min-width:0;width:100%;border:0;background:none;outline:0;font-family:var(--mono);font-weight:500;font-size:19px;color:var(--ink);padding:0;-moz-appearance:textfield}
+.fw input::-webkit-outer-spin-button,.fw input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.fu{font-size:13px;color:var(--muted);flex:none;white-space:nowrap}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sub{font-size:13px;font-weight:600;color:var(--ink);margin:2px 0 -4px}
+.res{display:grid;gap:10px}
+.heroes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.hero{background:var(--hero);color:var(--hero-ink);border-radius:16px;padding:14px 16px;display:grid;gap:2px;text-align:left;min-width:0}
+.hl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--hero-mut)}
+.hv{font-family:var(--mono);font-weight:600;font-size:30px;line-height:1.15;overflow-wrap:anywhere}
+.hv small{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--hero-mut);margin-left:6px}
+.rows2{background:var(--surface2);border-radius:14px;padding:4px 14px;display:grid}
+.rr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;text-align:left;border-top:1px solid var(--line)}
+.rr:first-child{border-top:0}
+.rr .l{color:var(--muted);font-size:13.5px;min-width:0}
+.rr .v{font-family:var(--mono);font-weight:500;font-size:16px;text-align:right;white-space:nowrap}
+.rr .v small{font-family:var(--sans);font-size:12px;color:var(--muted);margin-left:5px}
+.rh{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.warn{color:var(--warn);font-size:13px;font-weight:500}
+.primary{height:48px;border-radius:13px;background:var(--accent);color:var(--accent-ink);font-weight:600}
+.ghost{height:44px;border-radius:12px;border:1.5px dashed var(--line);color:var(--accent);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:6px 12px;font-family:var(--mono);font-size:13.5px;font-weight:500}
+.chip i{font-style:normal;opacity:.7;margin-left:4px}
+.chip.pre{background:var(--surface2);color:var(--ink);font-family:var(--sans)}
+.rrow{display:grid;grid-template-columns:22px 1fr 1fr 84px 32px;gap:8px;align-items:center}
+.rrow .ix{font-size:12px;color:var(--muted);text-align:center}
+.rrow input{min-width:0;width:100%;height:44px;border-radius:11px;border:1.5px solid transparent;background:var(--surface2);font-family:var(--mono);font-size:16px;color:var(--ink);padding:0 10px;outline:0}
+.rrow input:focus{border-color:var(--accent);background:var(--surface)}
+.rrow output{font-family:var(--mono);font-size:14px;text-align:right}
+.rrow .x{width:32px;height:32px;border-radius:9px;color:var(--muted);font-size:20px;line-height:1}
+.rhead{display:grid;grid-template-columns:22px 1fr 1fr 84px 32px;gap:8px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.rhead span:nth-child(n+2){padding-left:2px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:13.5px}
+th{font-family:var(--sans);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right;padding:6px 6px;white-space:nowrap}
+td{text-align:right;padding:9px 6px;border-top:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td:first-child{font-weight:600;color:var(--accent)}
+.cn{font-family:var(--mono);font-size:13px;line-height:1.7;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.cn b{color:var(--accent);font-weight:600}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav.tabs div{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+nav.tabs button{display:grid;justify-items:center;gap:2px;padding:6px 0;border-radius:12px;color:var(--muted);font-size:11.5px;font-weight:500}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button.on{color:var(--accent)}
+.credit{display:grid;justify-items:center;gap:2px;padding:20px 0 4px;font-size:12.5px;color:var(--muted);text-align:center}
+.credit b{color:var(--ink);font-weight:600}
+.credit button{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--accent);padding:6px 12px}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.tile:active{transform:none}}
+@media (max-width:360px){.hv{font-size:26px}.rrow{grid-template-columns:18px 1fr 1fr 70px 28px;gap:6px}}
+</style>
+
+<div class="shell">
+  <header class="top">
+    <button class="ib" id="back" aria-label="Back" hidden></button>
+    <span class="logo" id="logo"></span>
+    <h1 id="title">Easy Cal</h1>
+    <button class="ib" id="theme" aria-label="Switch light or dark"></button>
+  </header>
+  <main id="main"></main>
+  <footer class="credit">
+    <span>Developed by <b>Sarfaraz Abbas</b></span>
+    <button type="button" id="phone" aria-label="Copy phone number">03283363738</button>
+  </footer>
+</div>
+<nav class="tabs" aria-label="Sections"><div>
+  <button data-tab="" id="t-home"></button>
+  <button data-tab="recent" id="t-recent"></button>
+  <button data-tab="constants" id="t-const"></button>
+</div></nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s)};
+function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e}
+var store={
+  get:function(k){try{return JSON.parse(localStorage.getItem('ec:'+k))}catch(e){return null}},
+  set:function(k,v){try{localStorage.setItem('ec:'+k,JSON.stringify(v))}catch(e){}}
+};
+function fmt(x,d){
+  if(x==null||typeof x!=='number'||!isFinite(x))return '—';
+  if(x===0)return '0';
+  var a=Math.abs(x),dg=d!=null?d:(a>=1000?1:a>=100?2:a>=1?3:a>=0.01?4:6);
+  return Number(x.toFixed(dg)).toLocaleString('en-US',{maximumFractionDigits:dg});
+}
+var ICON={
+  air:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+  shrink:'<path d="M4 10V4h6M4 4l6 6M20 14v6h-6M20 20l-6-6"/>',
+  gsm:'<path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5"/>',
+  tol:'<path d="M4 7h8M16 7h4M4 17h4M12 17h8"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  g2f:'<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>',
+  yarn:'<path d="M4 8c4-4 12-4 16 0M4 12c4-4 12-4 16 0M4 16c4-4 12-4 16 0"/>',
+  blend:'<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>',
+  force:'<path d="M12 3v14M6 11l6 6 6-6M5 21h14"/>',
+  geo:'<circle cx="12" cy="12" r="9"/><path d="M12 12h9"/>',
+  mol:'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+  home:'<path d="M4 10l8-6 8 6v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  book:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/>'
+};
+function ico(n){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[n]+'</svg>'}
+
+/* ---------- toast + copy ---------- */
+var toastT;
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},1400)}
+function copy(s){
+  try{navigator.clipboard.writeText(s).then(function(){toast('Copied '+s)},function(){toast('Press and hold to select')})}
+  catch(e){toast('Press and hold to select')}
+}
+
+/* ---------- form kit ---------- */
+function Ctx(id){
+  var c={id:id,v:store.get(id)||{},inp:{},upd:[]};
+  c.save=function(){store.set(id,c.v)};
+  c.n=function(k){var e=c.inp[k];return e?parseFloat(e.value):NaN};
+  c.run=function(){c.upd.forEach(function(f){f()})};
+  c.changed=function(){c.save();c.run()};
+  return c;
+}
+function sec(title,note){var s=el('section','card');if(title)s.append(el('h3','',title));if(note)s.append(el('p','n',note));return s}
+function numField(c,key,label,unit,def){
+  var w=el('label','fld');
+  w.innerHTML='<span class="fl">'+label+'</span><span class="fw"><input id="'+c.id+'-'+key+'" type="number" inputmode="decimal" step="any" autocomplete="off"><span class="fu">'+(unit||'')+'</span></span>';
+  var i=$('input',w);
+  i.value=c.v[key]!=null?c.v[key]:def;
+  c.inp[key]=i;w.unit=$('.fu',w);
+  i.addEventListener('input',function(){c.v[key]=i.value;c.changed()});
+  return w;
+}
+function seg(c,key,opts,def,cb){
+  var w=el('div','seg');w.setAttribute('role','tablist');
+  function cur(){return c.v[key]!=null?c.v[key]:def}
+  function sync(){Array.prototype.forEach.call(w.children,function(b){var on=b.dataset.v===cur();b.classList.toggle('on',on);b.setAttribute('aria-selected',on)})}
+  opts.forEach(function(o){
+    var b=el('button','',o[1]);b.type='button';b.dataset.v=o[0];b.setAttribute('role','tab');
+    b.onclick=function(){c.v[key]=o[0];c.save();sync();if(cb)cb();c.run()};
+    w.append(b);
+  });
+  sync();w.cur=cur;
+  return w;
+}
+function modes(c,key,list,def,root){
+  var panels={};
+  function show(){var k=c.v[key]!=null?c.v[key]:def;for(var p in panels)panels[p].hidden=p!==k}
+  root.append(seg(c,key,list,def,show));
+  list.forEach(function(m){var p=el('div','panel');panels[m[0]]=p;root.append(p)});
+  show();
+  return panels;
+}
+function resBox(){
+  var w=el('div','res');
+  function txt(it){return typeof it.v==='string'?it.v:fmt(it.v,it.d)}
+  w.set=function(items){
+    w.innerHTML='';var heroes=null,rows=null;
+    items.forEach(function(it){
+      if(it.skip)return;
+      if(it.h){w.append(el('div','rh',it.h));heroes=rows=null;return}
+      if(it.w){w.append(el('div','warn',it.w));return}
+      if(it.big){
+        if(!heroes){heroes=el('div','heroes');w.append(heroes);rows=null}
+        var d=el('button','hero');d.type='button';
+        d.innerHTML='<span class="hl">'+it.l+'</span><span class="hv">'+txt(it)+'<small>'+(it.u||'')+'</small></span>';
+        d.onclick=function(){copy(txt(it))};heroes.append(d);return;
+      }
+      if(!rows){rows=el('div','rows2');w.append(rows);heroes=null}
+      var r=el('button','rr');r.type='button';
+      r.innerHTML='<span class="l">'+it.l+'</span><span class="v">'+txt(it)+'<small>'+(it.u||'')+'</small></span>';
+      r.onclick=function(){copy(txt(it))};rows.append(r);
+    });
+  };
+  return w;
+}
+function pair(a,b){var g=el('div','g2');g.append(a,b);return g}
+function trio(a,b,d){var g=el('div','g3');g.append(a,b,d);return g}
+function sub(t){return el('div','sub',t)}
+
+/* ---------- tools ---------- */
+var TOOLS=[];
+function tool(id,name,sub,cat,icon,build){TOOLS.push({id:id,name:name,sub:sub,cat:cat,icon:icon,build:build})}
+var CATS=[['test','Testing'],['fab','Fabric'],['yarn','Yarn & fibre'],['tool','Quick tools']];
+
+/* Air permeability */
+tool('air','Air Permeability','Flow reading to mm/s and every unit','test','air',function(c,root){
+  var card=sec('Meter reading');
+  var UN={lmin:'l/min',mlmin:'ml/min',ls:'l/s'};
+  var q=numField(c,'q','Reading',UN.lmin,'1.833');
+  var A=numField(c,'A','Test area','cm²','5');
+  function unitSync(){q.unit.textContent=UN[c.v.ru||'lmin']}
+  card.append(seg(c,'ru',[['lmin','l/min'],['mlmin','ml/min'],['ls','l/s']],'lmin',unitSync),pair(q,A));
+  unitSync();
+  var res=resBox();card.append(res);root.append(card);
+  function flux(){
+    var x=c.n('q'),u=c.v.ru||'lmin';
+    if(u==='mlmin')x/=1000;if(u==='ls')x*=60;
+    var a=c.n('A');return a>0?x*1e4/(60*a):NaN;
+  }
+  c.upd.push(function(){
+    var F=flux();
+    res.set([
+      {big:1,l:'Air permeability',v:F,u:'mm/s'},
+      {l:'l/m²/s',v:F,u:''},
+      {l:'cm³/cm²/s',v:F*0.1,u:''},
+      {l:'l/min/dm²',v:F*0.6,u:''},
+      {l:'l/min/m²',v:F*60,u:''},
+      {l:'m³/m²/min',v:F*0.06,u:''},
+      {l:'m³/m²/h',v:F*3.6,u:''},
+      {l:'cfm/ft²',v:F*0.19685,u:''}
+    ]);
+  });
+  var lc=sec('Readings & average','Add each reading, then read the average.');
+  var add=el('button','ghost','+ Add this reading');add.type='button';
+  var chips=el('div','chips'),avg=resBox();lc.append(add,chips,avg);root.append(lc);
+  function list(){return c.v.list||(c.v.list=[])}
+  function avgSet(){
+    var L=list();
+    avg.set(L.length?[{big:1,l:'Average',v:L.reduce(function(a,b){return a+b},0)/L.length,u:'mm/s'},{l:'Readings',v:L.length,d:0}]:[]);
+  }
+  function draw(){
+    chips.innerHTML='';
+    list().forEach(function(x,i){
+      var b=el('button','chip',fmt(x)+'<i>×</i>');b.type='button';b.setAttribute('aria-label','Remove reading '+(i+1));
+      b.onclick=function(){list().splice(i,1);c.save();draw()};chips.append(b);
+    });
+    avgSet();
+  }
+  add.onclick=function(){var f=flux();if(isFinite(f)){list().push(f);c.save();draw()}else toast('Enter a reading first')};
+  draw();
+  var rc=sec('Target to meter reading','Flow you need to see on the meter to hit a target permeability.');
+  rc.append(numField(c,'tg','Target','mm/s','200'));
+  var rres=resBox(),tbl=el('div','tw');rc.append(rres,sub('Common targets'),tbl);root.append(rc);
+  c.upd.push(function(){
+    var a=c.n('A'),T=c.n('tg');
+    function lm(t){return t*60*a/1e4}
+    rres.set([{big:1,l:'Meter flow',v:lm(T),u:'l/min'},{l:'In ml/min',v:lm(T)*1000},{l:'In l/s',v:lm(T)/60}]);
+    var h='<table><tr><th>mm/s</th><th>l/min</th><th>ml/min</th></tr>';
+    [200,100,50,40,30].forEach(function(t){h+='<tr><td>'+t+'</td><td>'+fmt(lm(t))+'</td><td>'+fmt(lm(t)*1000,0)+'</td></tr>'});
+    tbl.innerHTML=h+'</table>';
+  });
+});
+
+/* Shrinkage & skewness */
+tool('shrink','Shrinkage & Skewness','Warp, weft and skew from measurements','test','shrink',function(c,root){
+  function rowsCard(key,title,def){
+    var card=sec(title),head=el('div','rhead','<span>#</span><span>Before cm</span><span>After cm</span><span style="text-align:right">Change %</span><span></span>');
+    var list=el('div','panel'),add=el('button','ghost','+ Add observation');add.type='button';
+    var res=resBox();card.append(head,list,add,res);root.append(card);
+    function rows(){return c.v[key]||(c.v[key]=JSON.parse(JSON.stringify(def)))}
+    function pc(r){var b=parseFloat(r[0]),a=parseFloat(r[1]);return b>0&&isFinite(a)?(a-b)/b*100:NaN}
+    function sg(x){return isFinite(x)?(x>0?'+':'')+fmt(x,2):'—'}
+    var outs=[];
+    function calc(){
+      var vals=[];
+      rows().forEach(function(r,i){var p=pc(r);if(outs[i])outs[i].textContent=sg(p);if(isFinite(p))vals.push(p)});
+      var m=vals.length?vals.reduce(function(a,b){return a+b},0)/vals.length:NaN;
+      res.set([{big:1,l:'Mean change',v:sg(m),u:'%'},{l:isFinite(m)?(m<0?'Shrinkage':m>0?'Growth':'No change'):'Shrinkage / growth',v:isFinite(m)?fmt(Math.abs(m),2):'—',u:'%'}]);
+    }
+    function draw(){
+      list.innerHTML='';outs=[];
+      rows().forEach(function(r,i){
+        var row=el('div','rrow'),ix=el('span','ix',i+1);
+        var b=el('input'),a=el('input'),o=el('output'),x=el('button','x','×');
+        [b,a].forEach(function(n,k){n.type='number';n.inputMode='decimal';n.step='any';n.value=r[k];n.id=c.id+'-'+key+i+k;
+          n.setAttribute('aria-label',(k?'After':'Before')+' '+(i+1));
+          n.addEventListener('input',function(){r[k]=n.value;c.save();calc()})});
+        x.type='button';x.setAttribute('aria-label','Remove observation '+(i+1));
+        x.onclick=function(){if(rows().length>1){rows().splice(i,1);c.save();draw()}};
+        outs.push(o);row.append(ix,b,a,o,x);list.append(row);
+      });
+      calc();
+    }
+    add.onclick=function(){var l=rows()[rows().length-1]||['',''];rows().push([l[0],'']);c.save();draw()};
+    draw();
+  }
+  rowsCard('warp','Warp direction',[[25,24.7],[25,24.6],[25,24.5]]);
+  rowsCard('weft','Weft direction',[[40,38.4],[40,38.5],[40,38.6]]);
+  var sk=sec('Skewness','Diagonal measurements of the marked square.');
+  sk.append(pair(numField(c,'ac','AC','cm','32.7'),numField(c,'bd','BD','cm','35.3')));
+  var sres=resBox();sk.append(sres);root.append(sk);
+  c.upd.push(function(){
+    var a=c.n('ac'),b=c.n('bd'),s=(a-b)/(a+b)*200;
+    sres.set([{big:1,l:'Skewness',v:s,u:'%',d:2},{l:'Longer diagonal',v:isFinite(s)?(s>0?'AC':s<0?'BD':'Equal'):'—'}]);
+  });
+});
+
+/* GSM */
+tool('gsm','GSM','From a sample, from counts, or with denier','fab','gsm',function(c,root){
+  var FIN=[['−10% cotton',90],['−7% cotton',93],['−5% cotton',95],['6% PC',94],['8% CVC',92],['5% poly',95]];
+  function finished(g){
+    var out=[{h:'At finished stage'}];
+    FIN.forEach(function(f){out.push({l:f[0],v:g*f[1]/100,u:'g/m²'})});
+    return out;
+  }
+  var P=modes(c,'m',[['sample','Sample'],['counts','Counts'],['den','Ne + Den'],['conv','oz ↔ g']],'counts',root);
+
+  /* from sample */
+  var p=P.sample;
+  var s1=sec('Warp yarn','Pull threads from the fabric, measure length and weigh them.');
+  s1.append(trio(numField(c,'sw1','Threads','','30'),numField(c,'sw2','Length','cm','15.1'),numField(c,'sw3','Weight','g','0.048')));
+  var s2=sec('Weft yarn');
+  s2.append(trio(numField(c,'sf1','Threads','','30'),numField(c,'sf2','Length','cm','17.4'),numField(c,'sf3','Weight','g','0.132')));
+  var s3=sec('Construction');
+  s3.append(pair(numField(c,'se','Ends / inch','','76'),numField(c,'sp','Picks / inch','','43')),numField(c,'sk','Factor','','25'));
+  var sr=resBox();s3.append(sr);p.append(s1,s2,s3);
+  c.upd.push(function(){
+    var nw=c.n('sw1')*c.n('sw2')*0.005905/c.n('sw3'),nf=c.n('sf1')*c.n('sf2')*0.005905/c.n('sf3');
+    var g=(c.n('se')/nw+c.n('sp')/nf)*c.n('sk');
+    sr.set([{big:1,l:'Greige GSM',v:g,u:'g/m²'},{big:1,l:'In oz/yd²',v:g*0.0294935,u:'oz/yd²'},{h:'Yarn counts'},{l:'Warp count',v:nw,u:'Ne'},{l:'Weft count',v:nf,u:'Ne'}].concat(isFinite(g)?finished(g):[]));
+  });
+
+  /* from counts */
+  p=P.counts;
+  var k1=sec('Yarn counts');
+  k1.append(pair(numField(c,'kw','Warp count','Ne','40'),numField(c,'kf','Weft count','Ne','40')));
+  var k2=sec('Construction');
+  k2.append(pair(numField(c,'ke','Ends / inch','','110'),numField(c,'kp','Picks / inch','','90')),numField(c,'kk','Factor','','25.5'));
+  var kr=resBox();k2.append(kr);p.append(k1,k2);
+  c.upd.push(function(){
+    var g=(c.n('ke')/c.n('kw')+c.n('kp')/c.n('kf'))*c.n('kk');
+    kr.set([{big:1,l:'Greige GSM',v:g,u:'g/m²'},{big:1,l:'In oz/yd²',v:g*0.0294935,u:'oz/yd²'}].concat(isFinite(g)?finished(g):[]));
+  });
+
+  /* Ne + denier */
+  p=P.den;
+  var d1=sec('Warp','Ne yarn with a denier yarn (core, filament or spandex) in the same direction.');
+  d1.append(pair(numField(c,'dwn','Count','Ne','20'),numField(c,'dwd','Denier','den','20')));
+  var d2=sec('Weft');
+  d2.append(pair(numField(c,'dfn','Count','Ne','40'),numField(c,'dfd','Denier','den','42')));
+  var d3=sec('Construction');
+  d3.append(pair(numField(c,'de','Ends / inch','','100'),numField(c,'dp','Picks / inch','','48')),numField(c,'dk','Factor','','25'));
+  var dr=resBox();d3.append(dr);p.append(d1,d2,d3);
+  c.upd.push(function(){
+    var g=(c.n('de')*(1/c.n('dwn')+c.n('dwd')/5315)+c.n('dp')*(1/c.n('dfn')+c.n('dfd')/5315))*c.n('dk');
+    dr.set([{big:1,l:'Greige GSM',v:g,u:'g/m²'},{big:1,l:'In oz/yd²',v:g*0.0294935,u:'oz/yd²'}].concat(isFinite(g)?finished(g):[]));
+  });
+
+  /* conversion */
+  p=P.conv;
+  var v1=sec('g/m² to oz/yd²');v1.append(numField(c,'cg','Weight','g/m²','152'));var vr1=resBox();v1.append(vr1);
+  var v2=sec('oz/yd² to g/m²');v2.append(numField(c,'co','Weight','oz/yd²','4.07'));var vr2=resBox();v2.append(vr2);
+  p.append(v1,v2);
+  c.upd.push(function(){
+    vr1.set([{big:1,l:'Result',v:c.n('cg')*0.0294935,u:'oz/yd²'}]);
+    vr2.set([{big:1,l:'Result',v:c.n('co')/0.0294935,u:'g/m²'}]);
+  });
+});
+
+/* Tolerance */
+tool('tol','GSM Tolerance','Min and max for ±1% to ±10%','fab','tol',function(c,root){
+  var card=sec('Target weight');
+  card.append(numField(c,'v','GSM','g/m²','124.95'));
+  var res=resBox(),tw=el('div','tw'),cu=sec('Custom tolerance');
+  root.append(card);
+  var tc=sec('Tolerance table');tc.append(tw);root.append(tc);
+  cu.append(numField(c,'t','Tolerance ±','%','5'),res);root.append(cu);
+  c.upd.push(function(){
+    var v=c.n('v'),h='<table><tr><th>Tol</th><th>Min</th><th>Max</th><th>Min oz</th><th>Max oz</th></tr>';
+    for(var t=1;t<=10;t++){var lo=v-v*t/100,hi=v+v*t/100;
+      h+='<tr><td>±'+t+'%</td><td>'+fmt(lo,2)+'</td><td>'+fmt(hi,2)+'</td><td>'+fmt(lo*0.0294935,3)+'</td><td>'+fmt(hi*0.0294935,3)+'</td></tr>'}
+    tw.innerHTML=h+'</table>';
+    var t2=c.n('t');
+    res.set([{big:1,l:'Minimum',v:v-v*t2/100,u:'g/m²'},{big:1,l:'Maximum',v:v+v*t2/100,u:'g/m²'},{l:'Minimum',v:(v-v*t2/100)*0.0294935,u:'oz/yd²'},{l:'Maximum',v:(v+v*t2/100)*0.0294935,u:'oz/yd²'},{l:'Value',v:v*0.0294935,u:'oz/yd²'}]);
+  });
+});
+
+/* Greige to finish */
+tool('g2f','Greige to Finish','Width margin, greige width, finish width','fab','g2f',function(c,root){
+  var P=modes(c,'m',[['mar','Margin'],['gre','Greige width'],['fin','Finish width']],'mar',root);
+  var a=sec('Find the margin');a.append(pair(numField(c,'a1','Greige width','in','128'),numField(c,'a2','Finish width','in','116')));
+  var ar=resBox();a.append(ar);P.mar.append(a);
+  c.upd.push(function(){var g=c.n('a1'),f=c.n('a2');ar.set([{big:1,l:'Greige to finish margin',v:(g-f)/g*100,u:'%'},{l:'Width lost',v:g-f,u:'in'}])});
+  var b=sec('Find the greige width');b.append(pair(numField(c,'b1','Finish width','in','60'),numField(c,'b2','Margin','%','18')));
+  var br=resBox();b.append(br);P.gre.append(b);
+  c.upd.push(function(){br.set([{big:1,l:'Greige width',v:100*c.n('b1')/(100-c.n('b2')),u:'in'}])});
+  var d=sec('Find the finish width');d.append(pair(numField(c,'d1','Greige width','in','104'),numField(c,'d2','Margin','%','10')));
+  var dr=resBox();d.append(dr);P.fin.append(d);
+  c.upd.push(function(){dr.set([{big:1,l:'Finish width',v:(1-c.n('d2')/100)*c.n('d1'),u:'in'}])});
+});
+
+/* Yarn count */
+tool('yarn','Yarn Count','tex, dtex, denier, Nm and Ne','yarn','yarn',function(c,root){
+  var card=sec('Convert a count');
+  var U=[['tex','tex'],['dtex','dtex'],['den','den'],['nm','Nm'],['ne','Ne']];
+  var f=numField(c,'v','Value','tex','15.6');
+  function sync(){f.unit.textContent=(U.filter(function(u){return u[0]===(c.v.u||'tex')})[0]||U[0])[1]}
+  card.append(seg(c,'u',U,'tex',sync),f);sync();
+  var res=resBox();card.append(res);root.append(card);
+  c.upd.push(function(){
+    var v=c.n('v'),u=c.v.u||'tex',tex;
+    if(u==='tex')tex=v;else if(u==='dtex')tex=v/10;else if(u==='den')tex=v/9;else if(u==='nm')tex=1000/v;else tex=590.5/v;
+    var all={tex:tex,dtex:tex*10,den:tex*9,nm:1000/tex,ne:590.5/tex};
+    res.set(U.filter(function(x){return x[0]!==u}).map(function(x){return {big:x[0]==='ne'||x[0]==='tex'?1:0,l:x[1],v:all[x[0]]}}).sort(function(a,b){return (b.big|0)-(a.big|0)}));
+  });
+  var t=sec('Threads per length');
+  t.append(pair(numField(c,'tc','Per cm','','15'),numField(c,'ti','Per inch','','38')));
+  var tr=resBox();t.append(tr);root.append(t);
+  c.upd.push(function(){tr.set([{l:'Per cm to per inch',v:c.n('tc')*2.54,u:'/inch'},{l:'Per inch to per cm',v:c.n('ti')/2.54,u:'/cm'}])});
+});
+
+/* Blend ratio */
+tool('blend','Blend Ratio','By construction or by chemical analysis','yarn','blend',function(c,root){
+  var P=modes(c,'m',[['con','Construction'],['chem','Chemical']],'con',root);
+  var a=sec('Fabric');a.append(pair(numField(c,'e','Ends','','68'),numField(c,'p','Picks','','60')));
+  var w=sec('Warp');w.append(pair(numField(c,'wn','Count','Ne','12'),numField(c,'wp','Polyester','%','0')));
+  var f=sec('Weft');f.append(pair(numField(c,'fn','Count','Ne','35.4'),numField(c,'fp','Polyester','%','100')));
+  var n=sec();n.append(el('p','n','The rest of each yarn is counted as cotton.'));var cr=resBox();n.append(cr);
+  P.con.append(a,w,f,n);
+  c.upd.push(function(){
+    var Ww=c.n('e')/c.n('wn'),Wf=c.n('p')/c.n('fn'),T=Ww+Wf;
+    var pe=(Ww*c.n('wp')+Wf*c.n('fp'))/T;
+    cr.set([{big:1,l:'Polyester',v:pe,u:'%'},{big:1,l:'Cotton',v:100-pe,u:'%'},{h:'Weight share'},{l:'Warp',v:Ww/T*100,u:'%'},{l:'Weft',v:Wf/T*100,u:'%'}]);
+  });
+  var q=sec('Weights','Weigh the sample, then the residue after each dissolving step.');
+  q.append(pair(numField(c,'bw','Before','g','0.605'),numField(c,'pw','Polyester left','g','0.177')),
+    numField(c,'dw','After DMF (leave empty if no lycra)','g','0.579'));
+  var mr=sec('Moisture regain');
+  mr.append(trio(numField(c,'mp','Polyester','%','1.5'),numField(c,'mc','Cotton','%','8.5'),numField(c,'ml','Lycra','%','1')));
+  var chr=resBox();mr.append(chr);P.chem.append(q,mr);
+  c.upd.push(function(){
+    var B=c.n('bw'),Pw=c.n('pw'),D=c.n('dw'),L=isFinite(D)&&c.inp.dw.value!==''?B-D:0,C=B-Pw-L;
+    var fl=L*(1+c.n('ml')/100),fp=Pw*(1+c.n('mp')/100),fc=C*(1+c.n('mc')/100),T=fl+fp+fc;
+    var hasL=L>0;
+    chr.set([
+      {big:1,l:'Cotton',v:fc/T*100,u:'%'},{big:1,l:'Polyester',v:fp/T*100,u:'%'},{big:1,l:'Lycra',v:fl/T*100,u:'%',skip:!hasL},
+      {w:'Residue is heavier than the sample. Check the weights.',skip:!(C<0)},
+      {h:'Without moisture regain'},
+      {l:'Cotton',v:C/B*100,u:'%'},{l:'Polyester',v:Pw/B*100,u:'%'},{l:'Lycra',v:L/B*100,u:'%',skip:!hasL}
+    ].filter(function(x){return !x.skip&&(x.w?C<0:true)}));
+  });
+});
+
+/* Force */
+tool('force','Force','N, kgf, gf, lbf and ozf','tool','force',function(c,root){
+  var card=sec('Convert a force');
+  var U=[['n','N'],['kgf','kgf'],['gf','gf'],['lbf','lbf'],['ozf','ozf']];
+  var f=numField(c,'v','Value','N','1');
+  function sync(){f.unit.textContent=(U.filter(function(u){return u[0]===(c.v.u||'n')})[0]||U[0])[1]}
+  card.append(seg(c,'u',U,'n',sync),f);sync();
+  var gs=seg(c,'g',[['9.80665','g = 9.80665'],['9.8','g = 9.8']],'9.80665');
+  card.append(gs);
+  var res=resBox();card.append(res);root.append(card);
+  c.upd.push(function(){
+    var g=parseFloat(c.v.g||'9.80665'),u=c.v.u||'n';
+    var NF={n:1,kgf:g,gf:g/1000,lbf:0.45359237*g,ozf:0.028349523*g};
+    var N=c.n('v')*NF[u];
+    res.set(U.filter(function(x){return x[0]!==u}).map(function(x){return {l:x[1],v:N/NF[x[0]]}}).map(function(r,i){r.big=i<2?1:0;return r}));
+  });
+});
+
+/* Circle */
+tool('geo','Sample Circle','Area, radius and circumference','tool','geo',function(c,root){
+  var P=modes(c,'m',[['da','Dia → Area'],['ar','Area → Radius'],['dc','Dia → Circ']],'da',root);
+  var a=sec('Area from diameter');a.append(numField(c,'a','Diameter','cm','3.8'));var ar=resBox();a.append(ar);P.da.append(a);
+  c.upd.push(function(){var r=c.n('a')/2;ar.set([{big:1,l:'Area',v:Math.PI*r*r,u:'cm²'},{l:'Radius',v:r,u:'cm'}])});
+  var b=sec('Radius from area');b.append(numField(c,'b','Area','cm²','11.343'));var br=resBox();b.append(br);P.ar.append(b);
+  c.upd.push(function(){var r=Math.sqrt(c.n('b')/Math.PI);br.set([{big:1,l:'Radius',v:r,u:'cm'},{l:'Diameter',v:r*2,u:'cm'}])});
+  var d=sec('Circumference from diameter');d.append(numField(c,'d','Diameter','cm','11.287'));var dr=resBox();d.append(dr);P.dc.append(d);
+  c.upd.push(function(){dr.set([{big:1,l:'Circumference',v:Math.PI*c.n('d'),u:'cm'},{l:'Radius',v:c.n('d')/2,u:'cm'}])});
+});
+
+/* Solution prep */
+tool('mol','Solution Prep','Grams needed for a molar solution','tool','mol',function(c,root){
+  var card=sec('Molar solution');
+  card.append(pair(numField(c,'M','Molarity','mol/l','0.1'),numField(c,'V','Volume','ml','1000')));
+  var mw=numField(c,'W','Molar mass','g/mol','74.54');card.append(mw);
+  var chips=el('div','chips');
+  [['KCl',74.54],['NaCl',58.44],['NaOH',40.0],['Na₂CO₃',105.99]].forEach(function(p){
+    var b=el('button','chip pre',p[0]+' '+p[1]);b.type='button';
+    b.onclick=function(){c.inp.W.value=p[1];c.v.W=String(p[1]);c.changed()};chips.append(b);
+  });
+  var res=resBox();card.append(chips,res);root.append(card);
+  c.upd.push(function(){
+    var g=c.n('M')*c.n('V')/1000*c.n('W');
+    res.set([{big:1,l:'Weigh out',v:g,u:'g'},{l:'In mg',v:g*1000,d:0},{l:'Make up to',v:c.n('V'),u:'ml'}]);
+  });
+});
+
+/* ---------- constants page ---------- */
+var CONST=[
+ ['Air permeability','<b>mm/s</b> = l/min × 10000 ÷ (60 × area cm²)\n1 mm/s = 1 l/m²/s\ncm³/cm²/s = mm/s × 0.1\nl/min/dm² = mm/s × 0.6\nm³/m²/h = mm/s × 3.6\ncfm/ft² = mm/s × 0.19685'],
+ ['GSM','<b>GSM</b> = (ends ÷ warp Ne + picks ÷ weft Ne) × factor\nFactor 25 or 25.5 allows for crimp\nNe from sample = threads × length cm × 0.005905 ÷ weight g\nDenier to Ne = 5315 ÷ den\n1 oz/yd² = 33.906 g/m²'],
+ ['Yarn count','<b>tex</b> = 1000 ÷ Nm = 590.5 ÷ Ne\ndtex = tex × 10\nden = tex × 9\nNm = Ne × 1.693'],
+ ['Force','1 kgf = g newton (g = 9.80665 or 9.8)\n1 lbf = 0.45359237 kg × g\n1 ozf = 0.028349523 kg × g'],
+ ['Blend by construction','Warp weight ∝ ends ÷ warp Ne\nWeft weight ∝ picks ÷ weft Ne\nPolyester % = weighted mean of the yarn polyester %'],
+ ['Blend by chemical analysis','Cotton = before − polyester − lycra\nLycra = before − after DMF\nCorrected weight = weight × (1 + regain %)\nDefault regain: PE 1.5, cotton 8.5, lycra 1'],
+ ['Shrinkage and skewness','<b>Change %</b> = (after − before) ÷ before × 100\nNegative means shrinkage\n<b>Skewness %</b> = (AC − BD) ÷ (AC + BD) × 200'],
+ ['Greige and finish','Margin % = (greige − finish) ÷ greige × 100\nGreige = 100 × finish ÷ (100 − margin)\nFinish = greige × (1 − margin ÷ 100)'],
+ ['Solution','grams = molarity × volume ml ÷ 1000 × molar mass']
+];
+
+/* ---------- navigation ---------- */
+var main=$('#main'),titleEl=$('#title'),backEl=$('#back'),logoEl=$('#logo'),themeEl=$('#theme');
+backEl.innerHTML=ico('back');logoEl.innerHTML=ico('yarn');
+$('#t-home').innerHTML=ico('home')+'<span>Tools</span>';
+$('#t-recent').innerHTML=ico('clock')+'<span>Recent</span>';
+$('#t-const').innerHTML=ico('book')+'<span>Formulas</span>';
+Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'),function(b){
+  b.onclick=function(){var t=b.dataset.tab;if(location.hash.slice(1)===t){render()}else{location.hash=t}};
+});
+backEl.onclick=function(){location.hash=''};
+$('#phone').onclick=function(){copy('03283363738')};
+
+function tile(t){
+  var b=el('button','tile cat-'+t.cat);b.type='button';
+  b.innerHTML='<span class="ti">'+ico(t.icon)+'</span><span><b>'+t.name+'</b><span class="s">'+t.sub+'</span></span>';
+  b.onclick=function(){location.hash=t.id};
+  return b;
+}
+function home(){
+  var s=el('label','search');s.innerHTML=ico('search')+'<input id="q" type="search" placeholder="Search calculators" autocomplete="off" aria-label="Search calculators">';
+  var out=el('div');out.style.display='grid';out.style.gap='14px';
+  main.append(s,out);
+  function draw(){
+    var q=$('#q').value.trim().toLowerCase();out.innerHTML='';var any=false;
+    CATS.forEach(function(cat){
+      var L=TOOLS.filter(function(t){return t.cat===cat[0]&&(t.name+' '+t.sub).toLowerCase().indexOf(q)>-1});
+      if(!L.length)return;any=true;
+      out.append(el('div','gh',cat[1]));var g=el('div','grid');L.forEach(function(t){g.append(tile(t))});out.append(g);
+    });
+    if(!any)out.append(el('div','empty','No calculator matches “'+q.replace(/</g,'&lt;')+'”.'));
+  }
+  $('#q').addEventListener('input',draw);draw();
+}
+function recent(){
+  var ids=store.get('recent')||[],L=ids.map(function(i){return TOOLS.filter(function(t){return t.id===i})[0]}).filter(Boolean);
+  if(!L.length){main.append(el('div','empty','Calculators you open will show up here.'));return}
+  var g=el('div','grid');L.forEach(function(t){g.append(tile(t))});main.append(g);
+}
+function constants(){
+  CONST.forEach(function(x){var s=sec(x[0]);s.append(el('pre','cn',x[1]));main.append(s)});
+}
+function setTheme(t){
+  if(t)document.documentElement.setAttribute('data-theme',t);
+  var dark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);
+  themeEl.innerHTML=ico(dark?'sun':'moon');
+  return dark;
+}
+themeEl.onclick=function(){var d=setTheme();var n=d?'light':'dark';setTheme(n);store.set('theme',n)};
+var st=store.get('theme');if(st)document.documentElement.setAttribute('data-theme',st);setTheme();
+
+function render(){
+  var h=decodeURIComponent(location.hash.slice(1));
+  main.innerHTML='';window.scrollTo(0,0);
+  var t=TOOLS.filter(function(x){return x.id===h})[0];
+  var tab=t?'':(h==='recent'||h==='constants'?h:'');
+  Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'),function(b){b.classList.toggle('on',b.dataset.tab===tab)});
+  backEl.hidden=!t;logoEl.hidden=!!t;
+  if(t){
+    titleEl.textContent=t.name;
+    var c=Ctx(t.id),root=el('div','panel');t.build(c,root);main.append(root);c.run();
+    var r=(store.get('recent')||[]).filter(function(i){return i!==t.id});r.unshift(t.id);store.set('recent',r.slice(0,8));
+  }else if(h==='recent'){titleEl.textContent='Recent';recent()}
+  else if(h==='constants'){titleEl.textContent='Formulas';constants()}
+  else{titleEl.textContent='Easy Cal';home()}
+}
+addEventListener('hashchange',render);
+render();
+})();
+</script>
+
+</html>
